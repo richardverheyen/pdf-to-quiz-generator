@@ -32,7 +32,7 @@ export default function ChatWithFiles() {
     object: partialQuestions,
     isLoading,
   } = experimental_useObject({
-    api: "https://pdf-to-quiz-generator-f3jil758j-richardverheyens-projects.vercel.app/api/generate-quiz",
+    api: "https://pdf-to-quiz-generator-bay-two.vercel.app/api/generate-quiz",
     schema: questionsSchema,
     initialValue: undefined,
     onError: (error) => {
