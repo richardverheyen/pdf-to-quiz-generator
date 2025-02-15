@@ -3,32 +3,29 @@ import { google } from "@ai-sdk/google";
 import { streamObject } from "ai";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "http://localhost:3000", // Your local development server
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, *",
-  "Access-Control-Expose-Headers": "*",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, Origin",
+  "Access-Control-Max-Age": "86400",
 };
 
-// Handle OPTIONS preflight request
 export async function OPTIONS(req: Request) {
+  console.log("OPTIONS request received");
   return new Response(null, {
     status: 200,
-    headers: {
-      ...corsHeaders,
-      // Add additional headers needed for preflight
-      "Access-Control-Max-Age": "86400",
-      Allow: "OPTIONS, POST",
-    },
+    headers: corsHeaders,
   });
 }
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  // Handle actual request
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
+  console.log("POST request received");
+
+  // Check the request method
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", {
+      status: 405,
       headers: corsHeaders,
     });
   }
@@ -72,14 +69,13 @@ export async function POST(req: Request) {
 
     const response = result.toTextStreamResponse();
 
-    // Add CORS headers to streaming response
+    // Add CORS headers to the response
     Object.entries(corsHeaders).forEach(([key, value]) => {
       response.headers.set(key, value);
     });
 
     return response;
   } catch (error: any) {
-    // Error handling with CORS headers
     return new Response(
       JSON.stringify({ error: error.message || "Internal Server Error" }),
       {

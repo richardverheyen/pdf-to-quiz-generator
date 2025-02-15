@@ -36,6 +36,8 @@ export default function ChatWithFiles() {
     schema: questionsSchema,
     headers: {
       "Content-Type": "application/json",
+      // Add the origin of your local development server
+      Origin: "http://localhost:3000", // or whatever port you're using
     },
     initialValue: undefined,
     onError: (error) => {
