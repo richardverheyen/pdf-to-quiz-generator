@@ -34,6 +34,9 @@ export default function ChatWithFiles() {
   } = experimental_useObject({
     api: "https://pdf-to-quiz-generator-f3jil758j-richardverheyens-projects.vercel.app/api/generate-quiz",
     schema: questionsSchema,
+    headers: {
+      "Content-Type": "application/json",
+    },
     initialValue: undefined,
     onError: (error) => {
       toast.error("Failed to generate quiz. Please try again.");

@@ -3,63 +3,92 @@ import { google } from "@ai-sdk/google";
 import { streamObject } from "ai";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // During development. In production, specify your domain
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, *",
+  "Access-Control-Expose-Headers": "*",
 };
 
-// Add an OPTIONS handler for CORS preflight requests
+// Handle OPTIONS preflight request
 export async function OPTIONS(req: Request) {
   return new Response(null, {
-    headers: corsHeaders,
+    status: 200,
+    headers: {
+      ...corsHeaders,
+      // Add additional headers needed for preflight
+      "Access-Control-Max-Age": "86400",
+      Allow: "OPTIONS, POST",
+    },
   });
 }
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const { files } = await req.json();
-  const firstFile = files[0].data;
+  // Handle actual request
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders,
+    });
+  }
 
-  const result = streamObject({
-    model: google("gemini-1.5-pro-latest"),
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a teacher. Your job is to take a document, and create a multiple choice test (with 4 questions) based on the content of the document. Each option should be roughly equal in length.",
+  try {
+    const { files } = await req.json();
+    const firstFile = files[0].data;
+
+    const result = streamObject({
+      model: google("gemini-1.5-pro-latest"),
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a teacher. Your job is to take a document, and create a multiple choice test (with 4 questions) based on the content of the document. Each option should be roughly equal in length.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Create a multiple choice test based on this document.",
+            },
+            {
+              type: "file",
+              data: firstFile,
+              mimeType: "application/pdf",
+            },
+          ],
+        },
+      ],
+      schema: questionSchema,
+      output: "array",
+      onFinish: ({ object }) => {
+        const res = questionsSchema.safeParse(object);
+        if (res.error) {
+          throw new Error(res.error.errors.map((e) => e.message).join("\n"));
+        }
       },
+    });
+
+    const response = result.toTextStreamResponse();
+
+    // Add CORS headers to streaming response
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+
+    return response;
+  } catch (error: any) {
+    // Error handling with CORS headers
+    return new Response(
+      JSON.stringify({ error: error.message || "Internal Server Error" }),
       {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: "Create a multiple choice test based on this document.",
-          },
-          {
-            type: "file",
-            data: firstFile,
-            mimeType: "application/pdf",
-          },
-        ],
-      },
-    ],
-    schema: questionSchema,
-    output: "array",
-    onFinish: ({ object }) => {
-      const res = questionsSchema.safeParse(object);
-      if (res.error) {
-        throw new Error(res.error.errors.map((e) => e.message).join("\n"));
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
       }
-    },
-  });
-
-  const response = result.toTextStreamResponse();
-
-  // Add CORS headers to the response
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
-
-  return response;
+    );
+  }
 }
