@@ -2,6 +2,19 @@ import { questionSchema, questionsSchema } from "@/lib/schemas";
 import { google } from "@ai-sdk/google";
 import { streamObject } from "ai";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // During development. In production, specify your domain
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Add an OPTIONS handler for CORS preflight requests
+export async function OPTIONS(req: Request) {
+  return new Response(null, {
+    headers: corsHeaders,
+  });
+}
+
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
@@ -41,5 +54,12 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toTextStreamResponse();
+  const response = result.toTextStreamResponse();
+
+  // Add CORS headers to the response
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+
+  return response;
 }
