@@ -10,6 +10,8 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
+export const runtime = "edge";
+
 // Sample job posting for testing
 const sampleJobPosting = `
 Job Title: Senior Full Stack Developer
