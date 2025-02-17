@@ -26,6 +26,11 @@ export default function ChatWithFiles() {
     []
   );
   const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [partialQuestions, setPartialQuestions] = useState<
+    z.infer<typeof questionsSchema>
+  >([]);
 
   const {
     submit,
@@ -78,14 +83,65 @@ export default function ChatWithFiles() {
 
   const handleSubmitWithFiles = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const encodedFiles = await Promise.all(
-      files.map(async (file) => ({
-        name: file.name,
-        type: file.type,
-        data: await encodeFileAsBase64(file),
-      }))
-    );
-    submit({ files: encodedFiles });
+    setIsLoading(true);
+    try {
+      const encodedFiles = await Promise.all(
+        files.map(async (file) => ({
+          name: file.name,
+          type: file.type,
+          data: await encodeFileAsBase64(file),
+        }))
+      );
+
+      // Make the API call to your Vercel endpoint
+      const response = await fetch(
+        "https://pdf-to-quiz-generator-bay-two.vercel.app/api/generate-quiz",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ files: encodedFiles }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to generate quiz");
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      let receivedQuestions: z.infer<typeof questionsSchema> = [];
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          // Parse the chunk and update questions
+          const chunk = new TextDecoder().decode(value);
+          try {
+            const parsedChunk = JSON.parse(chunk);
+            if (parsedChunk.questions) {
+              receivedQuestions = parsedChunk.questions;
+              setPartialQuestions(receivedQuestions);
+              setProgress((receivedQuestions.length / 4) * 100);
+            }
+          } catch (e) {
+            // Handle partial JSON chunks
+            console.log("Partial chunk received");
+          }
+        }
+      }
+
+      setQuestions(receivedQuestions);
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to generate quiz. Please try again.");
+      setFiles([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearPDF = () => {

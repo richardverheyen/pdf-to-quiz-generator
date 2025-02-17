@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "PDF Quiz Generator",
+  "version": "1.0",
+  "description": "Generate quizzes from PDF files",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://pdf-to-quiz-generator-bay-two.vercel.app/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://pdf-to-quiz-generator-bay-two.vercel.app;"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
