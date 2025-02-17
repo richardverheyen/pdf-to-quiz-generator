@@ -19,7 +19,6 @@ import { Progress } from "@/components/ui/progress";
 import Quiz from "@/components/quiz";
 import { Link } from "@/components/ui/link";
 import NextLink from "next/link";
-import { generateQuizTitle } from "./actions";
 import { AnimatePresence, motion } from "framer-motion";
 import { VercelIcon, GitIcon } from "@/components/icons";
 
@@ -90,7 +89,7 @@ export default function ChatWithFiles() {
       }))
     );
     submit({ files: encodedFiles });
-    const generatedTitle = await generateQuizTitle(encodedFiles[0].name);
+    const generatedTitle = "await generateQuizTitle(encodedFiles[0].name)";
     setTitle(generatedTitle);
   };
 
