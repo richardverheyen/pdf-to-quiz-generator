@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/generate-quiz/route.ts": {
+    "api/generate-quiz.ts": {
       "maxDuration": 30
     }
   }
