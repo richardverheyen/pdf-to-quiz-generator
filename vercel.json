@@ -1,6 +1,6 @@
 {
   "functions": {
-    "**/*": {
+    "app/api/generate-quiz.ts": {
       "maxDuration": 30
     }
   }
