@@ -10,48 +10,11 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
-// Sample job posting for testing
-const sampleJobPosting = `
-Job Title: Senior Full Stack Developer
-
-About Us:
-We're a fast-growing tech company building innovative solutions for enterprise clients. We're looking for a talented Senior Full Stack Developer to join our engineering team.
-
-Requirements:
-- 5+ years of experience in full-stack web development
-- Strong expertise in React, Node.js, and TypeScript
-- Experience with cloud platforms (AWS, GCP, or Azure)
-- Knowledge of containerization and microservices architecture
-- Proficiency in SQL and NoSQL databases
-- Experience with CI/CD pipelines
-- Strong problem-solving and analytical skills
-- Excellent communication and teamwork abilities
-- Bachelor's degree in Computer Science or related field
-
-Responsibilities:
-- Design and implement scalable web applications
-- Lead technical architecture discussions and decisions
-- Mentor junior developers and conduct code reviews
-- Collaborate with product managers and designers
-- Optimize application performance and reliability
-- Write clean, maintainable, and well-tested code
-- Participate in agile ceremonies and sprint planning
-
-Nice to Have:
-- Experience with GraphQL and REST API design
-- Knowledge of Kubernetes and Docker
-- Familiarity with Python or Go
-- Open source contributions
-- Experience with machine learning integration
-
-Benefits:
-- Competitive salary and equity
-- Health, dental, and vision insurance
-- Flexible remote work policy
-- Professional development budget
-- 401(k) matching
-- Unlimited PTO
-`;
+interface JobDetails {
+  jobTitle: string;
+  location: string;
+  description: string;
+}
 
 async function withCors(
   request: Request,
@@ -86,8 +49,17 @@ export async function OPTIONS(req: Request) {
 export async function POST(req: Request) {
   return withCors(req, async (request) => {
     try {
-      const { files } = await request.json();
+      const { files, jobDetails } = await request.json();
       const resumePDF = files[0].data;
+
+      // Format job details into a structured job posting
+      const formattedJobPosting = `
+Job Title: ${jobDetails.jobTitle}
+Location: ${jobDetails.location}
+
+Job Description:
+${jobDetails.description}
+`;
 
       const result = streamObject({
         model: google("gemini-1.5-pro-latest"),
@@ -113,7 +85,7 @@ Key Instructions:
             content: [
               {
                 type: "text",
-                text: `Please analyze this resume against the following job posting and provide a detailed ATS analysis. Job Posting:\n\n${sampleJobPosting}`,
+                text: `Please analyze this resume against the following job posting and provide a detailed ATS analysis. Job Posting:\n\n${formattedJobPosting}`,
               },
               {
                 type: "file",
