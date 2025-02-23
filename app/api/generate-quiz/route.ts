@@ -10,29 +10,18 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
-interface JobDetails {
-  jobTitle: string;
-  location: string;
-  description: string;
-}
-
 async function withCors(
   request: Request,
   handler: (req: Request) => Promise<Response>
 ) {
   if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
-
   const response = await handler(request);
   const newHeaders = new Headers(response.headers);
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    newHeaders.set(key, value);
-  });
-
+  Object.entries(corsHeaders).forEach(([key, value]) =>
+    newHeaders.set(key, value)
+  );
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
@@ -41,9 +30,7 @@ async function withCors(
 }
 
 export async function OPTIONS(req: Request) {
-  return withCors(req, async () => {
-    return new Response(null, { status: 200 });
-  });
+  return withCors(req, async () => new Response(null, { status: 200 }));
 }
 
 export async function POST(req: Request) {
@@ -52,40 +39,32 @@ export async function POST(req: Request) {
       const { files, jobDetails } = await request.json();
       const resumePDF = files[0].data;
 
-      // Format job details into a structured job posting
       const formattedJobPosting = `
 Job Title: ${jobDetails.jobTitle}
 Location: ${jobDetails.location}
-
-Job Description:
-${jobDetails.description}
-`;
+Description: ${jobDetails.description}`;
 
       const result = streamObject({
         model: google("gemini-1.5-pro-latest"),
         messages: [
           {
             role: "system",
-            content: `You are an expert ATS (Applicant Tracking System) analyzer. Your job is to analyze resumes against job descriptions and provide detailed feedback and scoring.
+            content: `You are an ATS analyzer focused on providing concise, actionable feedback. Compare the resume to the job posting and provide scores and brief insights for key areas. Keep all analysis short and mobile-friendly - each section should be 1-2 sentences maximum. Focus on the most important matches and gaps.
 
-Key Instructions:
-1. Analyze both the content and format of the resume
-2. Compare the resume against the job requirements
-3. Look for keyword matches and gaps
-4. Consider both hard skills and soft skills
-5. Evaluate experience levels and relevance
-6. Check education requirements
-7. Look for industry-specific terminology
-8. Provide specific, actionable feedback
-9. Be thorough but fair in scoring
-10. Consider both exact and semantic matches for keywords`,
+Key points to analyze:
+- Overall match and key takeaways
+- Essential hard skills (technical skills, tools)
+- Critical soft skills
+- Experience level match
+- Must-have qualifications
+- Key missing keywords`,
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Please analyze this resume against the following job posting and provide a detailed ATS analysis. Job Posting:\n\n${formattedJobPosting}`,
+                text: `Analyze this resume against the following job posting:\n${formattedJobPosting}`,
               },
               {
                 type: "file",
@@ -109,12 +88,7 @@ Key Instructions:
     } catch (error: any) {
       return new Response(
         JSON.stringify({ error: error.message || "Internal Server Error" }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
   });
